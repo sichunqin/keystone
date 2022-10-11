@@ -3,7 +3,7 @@
 	url = https://github.com/riscv/riscv-gnu-toolchain
 [submodule "sdk"]
 	path = sdk
-	url = https://github.com/keystone-enclave/keystone-sdk
+	url = https://github.com/sichunqin/keystone-sdk
 [submodule "linux-keystone-driver"]
 	path = linux-keystone-driver
 	url = https://github.com/keystone-enclave/linux-keystone-driver
@@ -18,4 +18,8 @@
 	url = https://github.com/qemu/qemu
 [submodule "sm"]
 	path = sm
-	url = https://github.com/keystone-enclave/sm
+	url = https://github.com/sichunqin/sm
+
+[submodule "keystone-runtime"]
+	path = keystone-runtime
+	url = git@github.com:sichunqin/keystone-runtime.git
