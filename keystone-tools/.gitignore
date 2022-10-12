@@ -3,6 +3,7 @@ root_key
 temp
 eyrie*
 _py*
+__py*
 eapp*
 image
 rt*

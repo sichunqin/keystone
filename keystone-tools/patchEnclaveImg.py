@@ -220,7 +220,7 @@ def patchElfImage(defaultImagePath,
         imagePath,
         patch,
         newImagePath)
-    print("Start to verfiy patched image file.")
+    print("Start to verfiy patched image file")
     verifyPatchedImage(newImagePath,
                        pubKeyPath,
                        encKeyPath,
