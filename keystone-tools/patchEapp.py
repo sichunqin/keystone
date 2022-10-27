@@ -1,7 +1,8 @@
 import os
 import patchEnclaveImg
 
-defaultImagePath = os.path.join("image","hello-world")
+defaultImagePath = "../build/overlay/root/hello-world/hello-world"
+
 defaultRootKeyFolder = "eapp_root_key"
 defaultImageKeyfolder = "eapp_image_key"
 

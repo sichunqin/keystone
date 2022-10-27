@@ -27,9 +27,9 @@ def genSignKeyPair(prvKeyPath, pubKeyPath):
         w.write(pubKey.to_bytes())
 
 
-def genEncKeyPair(encKeyPath):
+def genEncKey(encKeyPath):
 
-    key = os.urandom(16)
+    key = os.urandom(32)
 
     with open(encKeyPath,"wb") as wf:
         wf.write(key)
@@ -46,7 +46,7 @@ def main():
     encPath = os.path.join(outFolder, fileName + '.enc')
 
     genSignKeyPair(prvPath, pubPath)
-    genEncKeyPair(encPath)
+    genEncKey(encPath)
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,38 @@
-diff --git firmware/fw_base.ldS firmware/fw_base.ldS
-index 0ac75f2..9aa9c1a 100644
---- firmware/fw_base.ldS
-+++ firmware/fw_base.ldS
-@@ -79,3 +79,39 @@
+diff --git a/firmware/fw_base.ldS b/firmware/fw_base.ldS
+index 0ac75f2..9f1b99b 100644
+--- a/firmware/fw_base.ldS
++++ b/firmware/fw_base.ldS
+@@ -61,6 +61,29 @@
+ 		PROVIDE(_data_end = .);
+ 	}
+ 
++  	. = ALIGN(0x1000);
++
++    .embed : {
++        /* 4 bytes magic number !emb */
++    	BYTE(33)
++    	BYTE(101)
++    	BYTE(109)
++    	BYTE(98)
++    	PROVIDE(_protocol_version = .);
++    	. += 0x1;
++
++    	PROVIDE(_rt_root_public_key = .);
++    	. += 0x20;
++
++    	PROVIDE(_eapp_root_public_key = .);
++    	. += 0x20;
++
++		PROVIDE(_rt_root_enc_key = .);
++    	. += 0x20;
++
++    	PROVIDE(_eapp_rt_enc_key = .);
++    	. += 0x20;
++  	}
+ 	. = ALIGN(0x1000); /* Ensure next section is page aligned */
+ 
+ 	.bss :
+@@ -79,3 +102,39 @@
  	. = ALIGN(0x1000); /* Need this to create proper sections */
  
  	PROVIDE(_fw_end = .);

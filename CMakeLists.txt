@@ -330,3 +330,19 @@ add_custom_target(
     ./scripts/travis.sh ${CMAKE_SOURCE_DIR}/tests
   COMMENT "Running tests"
 )
+
+add_custom_target(
+  "runtime"
+  COMMAND ../keystone-runtime/build.sh freemem
+  COMMAND cp ../keystone-runtime/eyrie-rt ../overlay/root/
+  COMMENT "building runtime "
+)
+
+add_custom_target(
+  "patch"
+  COMMAND python ../keystone-tools/patchSm.py
+  COMMAND python ../keystone-tools/patchRuntime.py
+  COMMAND python ../keystone-tools/patchEapp.py
+  COMMENT "Patch SM, runtime, and Eapp images with key data"
+)
+

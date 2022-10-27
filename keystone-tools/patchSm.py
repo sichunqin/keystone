@@ -7,7 +7,7 @@ os.chdir(os.path.dirname(__file__))
 
 def get_args():
     from argparse import ArgumentParser
-    imageDefault = 'image/fw_payload.elf'
+    imageDefault = '../build/sm.build/platform/generic/firmware/fw_payload.elf'
 
     parser = ArgumentParser()
 
@@ -87,7 +87,7 @@ def replaceSection(imagePath,
         wf.seek(offset)
         wf.write(embededData)
 
-    print("Successfully patch. patched file is " + newImagePath)
+    print("Successfully patch. patched file is " + imagePath)
 
 # Verify patched image is patched correctly
 def verifyPatch(newImagePath,
@@ -148,7 +148,6 @@ def patchSm():
         patch,
         args.newImagePath)
 
-
     verifyPatch(
         args.newImagePath,
         args.rtRootPubKeyPath,
@@ -156,6 +155,8 @@ def patchSm():
         args.rtRootEncKeyPath,
         args.eappRootEncKeyPath
     )
+    shutil.move(args.imagePath, args.imagePath + ".unpatch")
+    shutil.copy(args.newImagePath, args.imagePath)
     pass
 
 def main():

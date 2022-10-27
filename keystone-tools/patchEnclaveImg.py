@@ -73,11 +73,10 @@ def getPatchedData(pubKeyPath,
 
     imageSignatgure = signBinaryInElf(imagePath,prvKeyPath)
 
-    encryptedEncKey = bytes(16)
+    encryptedEncKey = bytes(32)
 
     return magic + version + publicKey + publicKeySignature + imageSignatgure + encryptedEncKey
 
-#  Need to execute riscv64-unknown-linux-gnu-objcopy -O binary eyrie-rt eyrie-rt.bin to get raw binary, then pad the binary to 4K aligment, then sign it.
 
 def signBinaryInElf(elfPath, prvKeyPath):
 
@@ -104,7 +103,6 @@ def signFile(filePath, signKeyPath):
 
     return sig
 
-
 def replaceSection(imagePath,
                    embededData,
                    newImagePath):
@@ -118,26 +116,29 @@ def replaceSection(imagePath,
 
         wf.seek(offset)
         wf.write(embededData)
-    print("Successfully patch. patched file is " + newImagePath)
+    print("Successfully patch. patched file is " + imagePath)
 
 def getDataToSignFromElf(elfPath):
     with open(elfPath, 'rb') as elffile:
-
-        embedSize = ELFFile(elffile).get_section_by_name(".embed").data_size
+        embedSec = ELFFile(elffile).get_section_by_name(".embed")
+        embedSize = embedSec.data_size
         for segment in ELFFile(elffile).iter_segments():
            if(segment.header.p_filesz > 0):
+
               offset = segment.header.p_offset
               size = segment.header.p_filesz
               break
-    size = size - embedSize
+    if(segment.section_in_segment(embedSec)):
+        size = size - embedSize
     if(size <= 0):
         raise Exception("Elf file doesn't contain any PT_LOAD data")
 
     with open(elfPath,"r+b") as wf:
         wf.seek(offset)
         raw = wf.read(size)
-
-    raw = raw + bytes(4096 - size % 4096)
+    if(size % 4096 > 0 ):
+        raw = raw + bytes(4096 - size % 4096)
+    print("Data to sign len is " + str(len(raw)) )
     return raw
 
 #  Patch Data Format:
@@ -146,7 +147,7 @@ def getDataToSignFromElf(elfPath):
 #  byte public_key[PUBLIC_KEY_SIZE];                    //RT or Eapp public key 32 bytes
 #  byte public_key_signature[SIGNATURE_SIZE];           //The RT or Eapp public key signed by RT or Eapp root private key  64 bytes
 #  byte image_signature[SIGNATURE_SIZE];                //RT or Eapp image signature. 64 bytes
-#  byte encrypted_enc_key[ENC_KEY_SIZE]                 //Encrypted Enc key. 16 byes
+#  byte encrypted_enc_key[ENC_KEY_SIZE]                 //Encrypted Enc key. 32 bytes
 
 def verifyPatchedImage(
     newImagePath,
@@ -169,7 +170,7 @@ def verifyPatchedImage(
     i+=64
     imageSignature = section[i:i+64]
     i+=64
-    encryptedEncKey=section[i:i+16]
+    encryptedEncKey=section[i:i+32]
 
     if(magic != b"!emb"):
         raise Exception("Magic number is not correct in patched image!")
@@ -227,6 +228,8 @@ def patchElfImage(defaultImagePath,
                        rootPubKeyPath,
                        rootEncKeyPath)
     print("Succeed to verfiy patched image file.")
+    shutil.move(imagePath, imagePath + ".unpatch")
+    shutil.copy(newImagePath, imagePath)
     pass
 
 def test():
