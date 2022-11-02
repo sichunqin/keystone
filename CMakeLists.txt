@@ -238,6 +238,20 @@ add_custom_target("sm" ALL DEPENDS "linux" ${sm_wrkdir_exists} ${sm_patches} WOR
   COMMENT "Building sm"
 )
 
+
+###############################################################################
+## COMPONENT: security monitor (sm) with enabling epm signature validation
+###############################################################################
+
+add_patch("sm/opensbi" "opensbi-firmware-secure-boot.patch" ${sm_srcdir}/opensbi sm_patches)
+add_custom_target("sm2" ALL DEPENDS "linux" ${sm_wrkdir_exists} ${sm_patches} WORKING_DIRECTORY ${sm_wrkdir}
+  COMMAND $(MAKE) -C ${sm_srcdir}/opensbi O=${sm_wrkdir} PLATFORM_DIR=${sm_srcdir}/plat/${platform}
+    CROSS_COMPILE=riscv${BITS}-unknown-elf- FW_PAYLOAD_PATH=${linux_image} FW_PAYLOAD=y PLATFORM_RISCV_XLEN=${BITS}
+    PLATFORM_RISCV_ISA=${ISA} PLATFORM_RISCV_ABI=${ABI} VALIDATE_EPM_SIG=y
+  COMMAND python ../../keystone-tools/patchSm.py
+  COMMENT "Building sm with enabling epm signature validation"
+)
+
 ###############################################################################
 ## COMPONENT: tests
 ###############################################################################
@@ -334,12 +348,20 @@ add_custom_target(
 add_custom_target(
   "runtime"
   COMMAND ../keystone-runtime/build.sh freemem
-  COMMAND cp ../keystone-runtime/eyrie-rt ../overlay/root/
-  COMMENT "building runtime "
+  COMMAND cp ../keystone-runtime/eyrie-rt ./overlay/root/
+  COMMENT "building runtime"
+)
+
+set(sdk_srcdir ${CMAKE_SOURCE_DIR}/sdk)
+add_custom_target(
+  "sdk"
+  COMMAND $(MAKE) -C ${sdk_srcdir}/build
+  COMMAND $(MAKE) -C ${sdk_srcdir}/build install
+  COMMENT "building SDK "
 )
 
 add_custom_target(
-  "patch"
+  "patchImg"
   COMMAND python ../keystone-tools/patchSm.py
   COMMAND python ../keystone-tools/patchRuntime.py
   COMMAND python ../keystone-tools/patchEapp.py

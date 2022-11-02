@@ -1,9 +1,9 @@
 import os
 import patchEnclaveImg
 
-defaultImagePath = "../build/overlay/root/eyrie-rt"
-defaultRootKeyFolder = "rt_root_key"
-defaultImageKeyfolder = "rt_image_key"
+defaultImagePath = "/home/sichunqin/code/github/sichunqin/keystone/build/overlay/root/eyrie-rt"
+defaultRootKeyFolder = "/home/sichunqin/code/github/sichunqin/keystone/keystone-tools/rt_root_key"
+defaultImageKeyfolder = "/home/sichunqin/code/github/sichunqin/keystone/keystone-tools/rt_image_key"
 
 def main():
     patchEnclaveImg.patchElfImage(defaultImagePath,

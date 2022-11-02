@@ -3,7 +3,7 @@ from elftools.elf.elffile import ELFFile
 import shutil
 import os
 
-os.chdir(os.path.dirname(__file__))
+#os.chdir(os.path.dirname(__file__))
 
 def get_args(defaultImagePath,
              defaultRootKeyFolder,
@@ -39,10 +39,6 @@ def get_args(defaultImagePath,
     parser.add_argument('--enc_root_ey', dest = 'rootEncKeyPath',
                         default=os.path.join(defaultRootKeyFolder,'root_enc.key'),
                         help='Enc Root Key Path, default is ' + os.path.join(defaultRootKeyFolder,'root_enc.key'))
-
-
-    parser.add_argument('--out', dest = 'newImagePath',
-                        default = defaultImagePath + ".patched", help='Patched Image Path')
 
     parser.add_argument('-v', '--version', action='version',
                         version='%(prog)s 1.0', help='version')
@@ -207,7 +203,8 @@ def patchElfImage(defaultImagePath,
     rootPubKeyPath = args.rootPubKeyPath
     encKeyPath = args.encKeyPath
     rootEncKeyPath = args.rootEncKeyPath
-    newImagePath = args.newImagePath
+
+    newImagePath = args.imagePath + ".patch"
 
     patch = getPatchedData(
         pubKeyPath,
@@ -228,8 +225,9 @@ def patchElfImage(defaultImagePath,
                        rootPubKeyPath,
                        rootEncKeyPath)
     print("Succeed to verfiy patched image file.")
-    shutil.move(imagePath, imagePath + ".unpatch")
+    #shutil.move(imagePath, imagePath + ".unpatch")
     shutil.copy(newImagePath, imagePath)
+    os.remove(newImagePath)
     pass
 
 def test():
