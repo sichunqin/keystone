@@ -7,7 +7,7 @@ os.chdir(os.path.dirname(__file__))
 
 def get_args():
     from argparse import ArgumentParser
-    imageDefault = '../build/sm.build/platform/generic/firmware/fw_payload.elf'
+    imageDefault = '/home/sichunqin/code/github/sichunqin/keystone/build/sm.build/platform/generic/firmware/fw_payload.elf'
 
     parser = ArgumentParser()
 
@@ -112,10 +112,10 @@ def verifyPatch(newImagePath,
     eappRootPubKey = section[i:i+32]
     i+=32
 
-    rtRootEncKey = section[i:i+16]
-    i+=16
+    rtRootEncKey = section[i:i+32]
+    i+=32
 
-    eappRootEncKey=section[i:i+16]
+    eappRootEncKey=section[i:i+32]
 
     if(magic != b"!emb"):
         raise Exception("Magic number is not correct in patched image!")
@@ -129,7 +129,7 @@ def verifyPatch(newImagePath,
        o_eappRootPubKey != eappRootPubKey or
        o_rtRootEncKey != rtRootEncKey or
        o_eappRootEncKey != eappRootEncKey):
-       raise Exception("Magic number is not correct in patched image!")
+       raise Exception("Key not correct in patched image!")
     print("Suceed to verify patched image.")
     pass
 

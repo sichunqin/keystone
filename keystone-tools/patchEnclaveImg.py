@@ -15,7 +15,11 @@ def get_args(defaultImagePath,
 
     parser.add_argument('--in', dest = 'imagePath',
                         default = defaultImagePath,
-                        help='input image path, default is' + defaultImagePath)
+                        help='Input image path, default is' + defaultImagePath)
+
+    parser.add_argument('--out', dest = 'patchedImagePath',
+                        default = defaultImagePath + ".signed",
+                        help='Output image path, default is' + defaultImagePath + ".signed")
 
     parser.add_argument('--pub_key', dest = 'pubKeyPath',
                         default= os.path.join(defaultImageKeyfolder,'key.pub'),
@@ -47,7 +51,7 @@ def get_args(defaultImagePath,
 
     parser.add_argument('--iv', dest = 'iv', type=int,
                         default= 0,
-                        help='Need to encrypt image')
+                        help='IV')
 
     parser.add_argument('-v', '--version', action='version',
                         version='%(prog)s 1.0', help='version')
@@ -131,7 +135,7 @@ def signBinaryInElf(elfPath, prvKeyPath):
     signing_key = ed25519.SigningKey(keydata)
 
     sig = signing_key.sign(raw)
-    print("Raw: " + raw[:123].hex() + "size: " + str(len(raw)))
+    print("Raw: " + raw[:123].hex() + " size: " + str(len(raw)))
     print("Signature: " + sig.hex())
     print("Private key path: " + prvKeyPath)
     return sig, len(raw)
@@ -144,10 +148,18 @@ def getElfTextSize(elfPath):
     return textSize
 
 def encryptBinaryInElf(elfPath, keyPath, counter = 0):
-
+    print("Start to encrypt binary in input ELF file. ")
     with open(elfPath, 'rb') as elffile:
         embedSec = ELFFile(elffile).get_section_by_name(".embed")
         embedSize = embedSec.data_size
+        embedData = embedSec.data()
+        functionMap = int.from_bytes(embedData[7: 7+2],"little")
+
+        enc = functionMap & 1
+        if(enc):
+            print("The binary is already encrypted, so ignore the encryption request. ")
+            return
+
         for segment in ELFFile(elffile).iter_segments():
            if(segment.header.p_filesz > 0):
 
@@ -174,7 +186,7 @@ def encryptBinaryInElf(elfPath, keyPath, counter = 0):
     with open(tempElfPath,"r+b") as wf:
         wf.seek(offset)
         wf.write(encRaw)
-
+    print("Encrypt binary completely, the data size: " + str(len(encRaw)))
     # verify data is encrypted correctly
     print("Start to verify image is encrypted properly")
 
@@ -189,7 +201,7 @@ def encryptBinaryInElf(elfPath, keyPath, counter = 0):
     assert(raw == decData)
     shutil.copyfile(tempElfPath,elfPath)
     os.remove(tempElfPath)
-    print("Alreadly verify image is encrypted correctly")
+    print("Verify image is encrypted correctly")
 
 def getContentFromFile(filePath):
     with open(filePath,"r+b") as f:
@@ -208,15 +220,14 @@ def signData(msg, signKeyPath):
     return sig
 
 def replaceSection(imagePath,
-                   embededData,
-                   newImagePath):
+                   embededData
+                 ):
     elffile = ELFFile(open(imagePath, 'rb'))
     section = elffile.get_section_by_name(".embed")
     offset = section.header.sh_offset
     size = section.header.sh_size
-    shutil.copyfile(imagePath,newImagePath)
 
-    with open(newImagePath,"r+b") as wf:
+    with open(imagePath,"r+b") as wf:
 
         wf.seek(offset)
         wf.write(embededData)
@@ -265,58 +276,6 @@ def getBinaryToSignFromElf(elfPath):
         raw = wf.read(size)
     print("Data to sign len is " + str(len(raw)) )
     return raw, size
-
-
-#  Patch Data Format:
-#  byte magic_number[MAGIC_NUMBER_SIZE];                //!emb ASCII code. 4 bytes
-#  byte protocol_version;                               //Current version is 0. 1 byte
-#  byte public_key[PUBLIC_KEY_SIZE];                    //RT or Eapp public key 32 bytes
-#  byte public_key_signature[SIGNATURE_SIZE];           //The RT or Eapp public key signed by RT or Eapp root private key  64 bytes
-#  byte image_signature[SIGNATURE_SIZE];                //RT or Eapp image signature. 64 bytes
-#  byte encrypted_enc_key[ENC_KEY_SIZE]                 //Encrypted Enc key. 32 bytes
-
-def verifyPatchedImage(
-    newImagePath,
-    pubKeyPath,
-    encKeyPath,
-    rootPubKeyPath,
-    rootEncKeypath):
-
-    elffile = ELFFile(open(newImagePath, 'rb'))
-    section = elffile.get_section_by_name(".embed").data()
-
-    i=0
-    magic = section[i:i+4]
-    i+=4
-    version = section[i: i+1]
-    i+=1
-    publicKey = section[i: i+32]
-    i+=32
-    publicKeySignature = section[i:i+64]
-    i+=64
-    imageSignature = section[i:i+64]
-    i+=64
-    encryptedEncKey=section[i:i+32]
-
-    if(magic != b"!emb"):
-        raise Exception("Magic number is not correct in patched image!")
-
-    originalPublicKey = open(pubKeyPath,"rb").read()
-
-    if(publicKey != originalPublicKey):
-        raise Exception("Public key is not correct in patched image!")
-
-    rootPubKey = open(rootPubKeyPath,"rb").read()
-    rootVerifyKey = ed25519.VerifyingKey(rootPubKey)
-    rootVerifyKey.verify(publicKeySignature,publicKey)  # If fail, exception will be raised.
-
-    raw = getDataToSignFromElf(newImagePath)
-
-    verifyKey = ed25519.VerifyingKey(publicKey)
-
-    verifyKey.verify(imageSignature,raw)
-
-    pass
 
 """
   byte magic_number[MAGIC_NUMBER_SIZE];             //!emb ASCII code.
@@ -398,6 +357,7 @@ def verifyPatch(
     verifyKey.verify(imageSignature,raw)
     print("image sig: " + imageSignature.hex())
     print("public key:" + publicKey.hex())
+    print("data to sign: " + raw[:256].hex())
 
     pass
 
@@ -419,35 +379,33 @@ def patchElfImage(defaultImagePath,
     rootEncKeyPath = args.rootEncKeyPath
     needEnc = args.needEnc
     iv = args.iv
-
-    newImagePath = args.imagePath + ".patch"
+    patchedImagePath = args.patchedImagePath
+    shutil.copyfile(imagePath, patchedImagePath)
 
     if(needEnc):
-        encryptBinaryInElf(imagePath,encKeyPath)
+        encryptBinaryInElf(patchedImagePath,encKeyPath)
     patch = getPatchedData(
         pubKeyPath,
         prvKeyPath,
         rootPrvKeyPath,
-        imagePath,
+        patchedImagePath,
         encKeyPath,
         rootEncKeyPath,
         needEnc,
         iv)
 
     replaceSection(
-        imagePath,
+        patchedImagePath,
         patch,
-        newImagePath)
+        )
     print("Start to verify patched image file")
-    verifyPatch(newImagePath,
+    verifyPatch(patchedImagePath,
                        pubKeyPath,
                        encKeyPath,
                        rootPubKeyPath,
                        rootEncKeyPath)
     print("Succeed to verify patched image file.")
-    #shutil.move(imagePath, imagePath + ".unpatch")
-    shutil.copy(newImagePath, imagePath)
-    #os.remove(newImagePath)
+
     pass
 
 def test():
