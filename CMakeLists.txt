@@ -361,7 +361,7 @@ add_custom_target(
 )
 
 add_custom_target(
-  "patchImg"
+  "sign"
   COMMAND python ../keystone-tools/patchSm.py
   COMMAND python ../keystone-tools/patchRuntime.py
   COMMAND python ../keystone-tools/patchEapp.py
