@@ -1,13 +1,11 @@
 diff --git a/firmware/fw_base.ldS b/firmware/fw_base.ldS
-index 0ac75f2..9f1b99b 100644
+index 0ac75f2..f2433b3 100644
 --- a/firmware/fw_base.ldS
 +++ b/firmware/fw_base.ldS
-@@ -61,6 +61,29 @@
- 		PROVIDE(_data_end = .);
+@@ -73,9 +73,74 @@
+ 		. = ALIGN(8);
+ 		PROVIDE(_bss_end = .);
  	}
- 
-+  	. = ALIGN(0x1000);
-+
 +    .embed : {
 +        /* 4 bytes magic number !emb */
 +    	BYTE(33)
@@ -16,7 +14,7 @@ index 0ac75f2..9f1b99b 100644
 +    	BYTE(98)
 +    	PROVIDE(_protocol_version = .);
 +    	. += 0x1;
-+
+ 
 +    	PROVIDE(_rt_root_public_key = .);
 +    	. += 0x20;
 +
@@ -29,10 +27,16 @@ index 0ac75f2..9f1b99b 100644
 +    	PROVIDE(_eapp_rt_enc_key = .);
 +    	. += 0x20;
 +  	}
- 	. = ALIGN(0x1000); /* Ensure next section is page aligned */
++
++	.runtime :
++	{
++		PROVIDE(_runtime_start = .);
++		*(.runtime)
++		. = ALIGN(8);
++		PROVIDE(_runtime_end = .);
++	}
+ 	/* End of the read-write data sections */
  
- 	.bss :
-@@ -79,3 +102,39 @@
  	. = ALIGN(0x1000); /* Need this to create proper sections */
  
  	PROVIDE(_fw_end = .);
@@ -72,3 +76,36 @@ index 0ac75f2..9f1b99b 100644
 +  /* 64 Bytes : security monitor's signature by device */
 +  PROVIDE( sanctum_sm_signature = . );
 +  . += 0x40;
++
+diff --git a/firmware/fw_payload.S b/firmware/fw_payload.S
+index 1ef121e..b26016b 100644
+--- a/firmware/fw_payload.S
++++ b/firmware/fw_payload.S
+@@ -95,3 +95,11 @@ payload_bin:
+ #else
+ 	.incbin	FW_PAYLOAD_PATH
+ #endif
++
++	.section .runtime, "ax", %progbits
++	.align 4
++	.globl runtime
++runtime:
++#ifdef RUNTIME_PATH
++	.incbin	RUNTIME_PATH
++#endif
+diff --git a/firmware/objects.mk b/firmware/objects.mk
+index b2ace75..4dc7c70 100644
+--- a/firmware/objects.mk
++++ b/firmware/objects.mk
+@@ -41,6 +41,11 @@ else
+ FW_PAYLOAD_PATH_FINAL=$(platform_build_dir)/firmware/payloads/test.bin
+ endif
+ firmware-genflags-$(FW_PAYLOAD) += -DFW_PAYLOAD_PATH=\"$(FW_PAYLOAD_PATH_FINAL)\"
++
++ifdef RUNTIME_PATH
++firmware-genflags-$(FW_PAYLOAD) += -DRUNTIME_PATH=\"$(RUNTIME_PATH)\"
++endif
++
+ ifdef FW_PAYLOAD_OFFSET
+ firmware-genflags-$(FW_PAYLOAD) += -DFW_PAYLOAD_OFFSET=$(FW_PAYLOAD_OFFSET)
+ endif
