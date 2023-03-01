@@ -96,12 +96,13 @@ set(linux_srcdir ${CMAKE_SOURCE_DIR}/linux)
 mkdir(linux_wrkdir ${CMAKE_BINARY_DIR}/linux.build)
 set(linux_symvers ${linux_wrkdir}/Modules.symvers)
 set(linux_image ${linux_wrkdir}/arch/riscv/boot/Image)
-set(driver_srcdir ${CMAKE_SOURCE_DIR}/linux-keystone-driver)
+set(driver_srcdir ${CMAKE_SOURCE_DIR}/linux-keystone-driver/linux-keystone-driver)
 set(driver_wrkdir ${CMAKE_BINARY_DIR}/linux-keystone-driver.build)
 set(fw_elf ${sm_wrkdir}/platform/${platform}/firmware/fw_payload.elf)
 set(fw_bin ${sm_wrkdir}/platform/${platform}/firmware/fw_payload.bin)
 set(final_image ${CMAKE_BINARY_DIR}/firmware.bin)
 set(initramfs_sysroot ${CMAKE_BINARY_DIR}/initramfs-sysroot)
+set (runtime_path ${CMAKE_SOURCE_DIR}/keystone-runtime/eyrie-rt.s)
 
 
 ###############################################################################
@@ -238,6 +239,17 @@ add_custom_target("sm" ALL DEPENDS "linux" ${sm_wrkdir_exists} ${sm_patches} WOR
   COMMENT "Building sm"
 )
 
+###############################################################################
+## COMPONENT: security monitor (sm) with enabling epm signature validation
+###############################################################################
+
+add_patch("sm/opensbi" "opensbi-firmware-secure-boot.patch" ${sm_srcdir}/opensbi sm_patches)
+add_custom_target("sm1" ALL DEPENDS "linux" ${sm_wrkdir_exists} ${sm_patches} WORKING_DIRECTORY ${sm_wrkdir}
+  COMMAND $(MAKE) -C ${sm_srcdir}/opensbi O=${sm_wrkdir} PLATFORM_DIR=${sm_srcdir}/plat/${platform}
+    CROSS_COMPILE=riscv${BITS}-unknown-elf- FW_PAYLOAD_PATH=${linux_image} FW_PAYLOAD=y PLATFORM_RISCV_XLEN=${BITS}
+    PLATFORM_RISCV_ISA=${ISA} PLATFORM_RISCV_ABI=${ABI} RUNTIME_PATH=${runtime_path}
+  COMMENT "Building sm with embedding runtime binary into sm"
+)
 
 ###############################################################################
 ## COMPONENT: security monitor (sm) with enabling epm signature validation
@@ -347,8 +359,10 @@ add_custom_target(
 
 add_custom_target(
   "runtime"
-  COMMAND ../keystone-runtime/build.sh freemem
-  COMMAND cp ../keystone-runtime/eyrie-rt ./overlay/root/
+  COMMAND ../keystone-runtime/build.sh freemem untrusted_io_syscall linux_syscall env_setup
+
+  COMMAND python ../keystone-tools/convertToMemdump.py --in ../keystone-runtime/eyrie-rt --out ../keystone-runtime/eyrie-rt.b2
+
   COMMENT "building runtime"
 )
 
