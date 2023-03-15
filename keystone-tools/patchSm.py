@@ -3,7 +3,7 @@ from elftools.elf.elffile import ELFFile
 import shutil
 import os
 
-os.chdir(os.path.dirname(__file__))
+#os.chdir(os.path.dirname(__file__))
 
 def get_args():
     from argparse import ArgumentParser
@@ -87,7 +87,7 @@ def replaceSection(imagePath,
         wf.seek(offset)
         wf.write(embededData)
 
-    print("Successfully patch. patched file is " + imagePath)
+    print("Successfully patch SM with key data. The patched file is " + imagePath)
 
 # Verify patched image is patched correctly
 def verifyPatch(newImagePath,
@@ -130,7 +130,7 @@ def verifyPatch(newImagePath,
        o_rtRootEncKey != rtRootEncKey or
        o_eappRootEncKey != eappRootEncKey):
        raise Exception("Key not correct in patched image!")
-    print("Suceed to verify patched image.")
+    print("Succeed to verify patched image against with the expected key data.")
     pass
 
 def patchSm():

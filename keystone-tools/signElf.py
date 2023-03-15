@@ -122,6 +122,7 @@ def generateHeader(pubKeyPath,
     headerData = headerData + headerSignature
 
     assert(len(headerData) == (embedSize + 64))
+
     return headerData
 
 
@@ -315,7 +316,7 @@ def signElf(defaultImagePath,
         textSize,
         iv)
 
-    with open(signedImagePath,"r+b") as wf:
+    with open(signedImagePath,"wb") as wf:
         wf.write(header + bodyData)
 
     print("Start to verify signed file")
@@ -326,7 +327,8 @@ def signElf(defaultImagePath,
                        encKeyPath,
                        rootPubKeyPath,
                        rootEncKeyPath)
-    print("Succeed to verify patched image file.")
+    print("Succeed to verify signed image file.")
+    print("The signed file is stoared at " + signedImagePath)
 
     pass
 
@@ -344,7 +346,7 @@ def test():
 
 def main():
 
-    defaultImagePath = "/home/sichunqin/code/github/sichunqin/keystone/build/overlay/root/hello-world/hello-world"
+    defaultImagePath = "/home/sichunqin/code/github/sichunqin/keystone/build/overlay/root/examples/hello/hello"
     defaultRootKeyFolder = "/home/sichunqin/code/github/sichunqin/keystone/keystone-tools/eapp_root_key"
     defaultImageKeyfolder = "/home/sichunqin/code/github/sichunqin/keystone/keystone-tools/eapp_image_key"
     signElf(defaultImagePath,
