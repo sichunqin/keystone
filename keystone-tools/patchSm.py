@@ -3,7 +3,7 @@ from elftools.elf.elffile import ELFFile
 import shutil
 import os
 
-#os.chdir(os.path.dirname(__file__))
+os.chdir(os.path.dirname(__file__))
 
 def get_args():
     from argparse import ArgumentParser

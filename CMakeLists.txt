@@ -248,7 +248,8 @@ add_custom_target("sm1" ALL DEPENDS "linux" ${sm_wrkdir_exists} ${sm_patches} WO
   COMMAND $(MAKE) -C ${sm_srcdir}/opensbi O=${sm_wrkdir} PLATFORM_DIR=${sm_srcdir}/plat/${platform}
     CROSS_COMPILE=riscv${BITS}-unknown-elf- FW_PAYLOAD_PATH=${linux_image} FW_PAYLOAD=y PLATFORM_RISCV_XLEN=${BITS}
     PLATFORM_RISCV_ISA=${ISA} PLATFORM_RISCV_ABI=${ABI} RUNTIME_PATH=${runtime_path}
-  COMMENT "Building sm with embedding runtime binary into sm"
+  COMMAND python ../../keystone-tools/patchSm.py
+  COMMENT "Building sm with embedding runtime into sm"
 )
 
 ###############################################################################
@@ -374,11 +375,4 @@ add_custom_target(
   COMMENT "building SDK "
 )
 
-add_custom_target(
-  "sign"
-  COMMAND python ../keystone-tools/patchSm.py
-  COMMAND python ../keystone-tools/patchRuntime.py
-  COMMAND python ../keystone-tools/patchEapp.py
-  COMMENT "Patch SM, runtime, and Eapp images with key data"
-)
 
